@@ -132,6 +132,23 @@ export default {
 
             return result;
         },
+        updateCellPossibleDirections(index) {
+            let cellPossibleDirections = this.cellsPossibleDirections[index];
+            const cellPossibleDirectionNumber = cellPossibleDirections.length;
+
+            for (let i = 0; i < cellPossibleDirectionNumber; i++) {
+                // the destination cell that can go from the current cell
+                const destinationCell = this.getDestinationCell(index, cellPossibleDirections[i]);
+
+                // if the destination cell is blocked we remove the direction toward the destination cell from the current cell
+                if (this.hasElement(this.blockCells, destinationCell)) {
+                    const arrayIndex = this.cellsPossibleDirections[index].indexOf(cellPossibleDirections[i]);
+                    if (arrayIndex !== -1) {
+                        this.cellsPossibleDirections[index].splice(arrayIndex, 1);
+                    }
+                }
+            }
+        },
         getDeadEndCells() {
             let result = [];
             const mazeWalls = this.mazeWalls;
@@ -165,20 +182,63 @@ export default {
             console.log('can go west: ' + canGoWest);
         },
         findThePath() {
-            const deadEndCells = this.deadEndCells;
-            for (let i = 0; i < deadEndCells.length; i++) {
-                this.blockCells.push(i);
 
+            // adding pony cell to the block cells
+            if (!this.hasElement(this.blockCells, this.ponyCell)) {
+                this.blockCells.push(this.ponyCell);
+            }
+
+            // adding pony cell to the block cells
+            if (!this.hasElement(this.blockCells, this.endCell)) {
+                this.blockCells.push(this.endCell);
+            }
+            //this.blockCells.push(15);
+            //this.updateCellPossibleDirections(16);
+            //for (let i = 0; i < this.deadEndCells.length; i++) {
+                this.getDeadEndPath(this.deadEndCells[0]);
+                this.getDeadEndPath(this.deadEndCells[1]);
+            //}
+
+            // for (let i = 0; i < this.mazeCells.length; i++) {
+            //     this.getDeadEndPath(i);
+            // }
+        },
+        getDeadEndPath(index) {
+            console.log('-------------------');
+            console.log('get dead end ' + index);
+            // if there is one way to continue
+
+            //console.log('where cell ' + index + ' can go: ' + this.cellsPossibleDirections[index]);
+            if (this.cellsPossibleDirections[index].length === 1) {
+                const nextDestinationCell = this.getDestinationCell(index, this.cellsPossibleDirections[index][0]);
+
+                //console.log(nextDestinationCell);
+                if (nextDestinationCell === -1) {
+                    console.log('destination is impossible');
+                }
+
+                if (!this.hasElement(this.blockCells, nextDestinationCell)) {
+                    console.log('destination cell is not blocked, will be blocked and call the function again: ', nextDestinationCell);
+                    this.blockCells.push(nextDestinationCell);
+                    this.updateCellPossibleDirections(nextDestinationCell);
+                    this.getDeadEndPath(nextDestinationCell);
+                } else {
+                    console.log('destination cell is blocked, continue with other cells' , nextDestinationCell);
+                }
+            // it is a junstion maybe put in junction array
+            } else {
+                console.log('this is a junction, stop here');
             }
         },
-        getDeadEndPath() {
 
-        },
         isValidCellIndex(cell, mazeCellsNumber) {
             return mazeCellsNumber - 1 < cell || cell < 0 ? false : true;
         },
         hasElement(array, element) {
             return array.indexOf(element) === -1 ? false : true;
+        },
+        removeArrayElement(array, value) {
+            return array.filter((element) => {element !== value});
         },
         getDestinationCell(currentCell, direction) {
             let result = -1;
@@ -271,7 +331,7 @@ export default {
 
             //let possibleMoves = this.getPossibleMoves(value);
             //console.log(this.getDestinationCell(value, 'west'));
-            //this.findThePath();
+            this.findThePath();
         }
     }
 }
