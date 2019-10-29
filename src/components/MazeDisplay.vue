@@ -163,6 +163,20 @@ export default {
 
             return result;
         },
+        getDeadEndNeighborCell(index) {
+            console.log(index);
+            // make a function to test if this is a dead end
+            if (this.cellsPossibleDirections[index].length === 1) {
+                const nextDestinationCell = this.getDestinationCell(index, this.cellsPossibleDirections[index][0]);
+
+                //console.log(nextDestinationCell);
+                if (nextDestinationCell === -1) {
+                    console.log('destination is impossible');
+                }
+
+                return nextDestinationCell;
+            }
+        },
         getPossibleMoves(cell) {
             const mazeCells = this.mazeCells;
             const mazeCellsNumber = mazeCells.length;
@@ -194,10 +208,12 @@ export default {
             }
             //this.blockCells.push(15);
             //this.updateCellPossibleDirections(16);
-            //for (let i = 0; i < this.deadEndCells.length; i++) {
-                this.getDeadEndPath(this.deadEndCells[0]);
-                this.getDeadEndPath(this.deadEndCells[1]);
-            //}
+            for (let i = 0; i < this.deadEndCells.length; i++) {
+                this.getDeadEndPath(this.deadEndCells[i]);
+
+                // update neighbor
+                this.updateCellPossibleDirections(this.getDeadEndNeighborCell(this.deadEndCells[i]));
+            }
 
             // for (let i = 0; i < this.mazeCells.length; i++) {
             //     this.getDeadEndPath(i);
