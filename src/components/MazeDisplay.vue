@@ -34,8 +34,8 @@ export default {
             mazeCells: [],
             mazeWalls: [],
             cellsPossibleDirections: [],
-            deadEndCells: [],
-            blockCells: [],
+            escapePath: [],
+            passedPath: [],
             domokunCell: 0,
             ponyCell: 0,
             endCell: 0,
@@ -81,180 +81,143 @@ export default {
             this.endCell = mazeData['end-point'][0];
 
             //getting the maze data for the first time
-            //if (!isRefresh) {
+            if (!isRefresh) {
                 // set data
                 this.mazeCells = mazeData.data;
                 this.mazeWidth = mazeData.size[0];
                 this.mazeHeight = mazeData.size[1];
 
                 // finding all walls beside north and west which are East and South
-                this.mazeWalls = this.getEastAndSouthWalls();
-
                 // finding the possible moves for each cell (directions with no walls for each cell)
-                this.cellsPossibleDirections = this.getCellsPossibleDirections();
-
-                // finding the dead end cells (cells with 3 walls except Pony and Endpoint cells)
-                this.deadEndCells = this.getDeadEndCells();
-
-                // a clone of dead end cells for they are already in the block list (no way to go)
-                // more data will be added to this array
-                this.blockCells = this.deadEndCells.slice(0); //https://davidwalsh.name/javascript-clone-array
-            //}
+                this.processMazeCells();
+            }
         },
-        getEastAndSouthWalls() {
+        processMazeCells() {
+            //let cloneMazeCells = this.mazeCells.slice(0); //https://davidwalsh.name/javascript-clone-array
             let cloneMazeCells = JSON.parse(JSON.stringify(this.mazeCells)); //https://stackoverflow.com/questions/31344041/how-to-unbind-an-array-copy-in-vue-js
+            let cellsPossibleDirections = [];
             const width = this.mazeWidth;
             const height = this.mazeHeight;
+            const directions = ['north', 'south', 'east', 'west'];
+
+            // Looping through all cells
             for (let i = 0; i < cloneMazeCells.length; i++) {
-                if (!this.canGoSouth(i, cloneMazeCells, cloneMazeCells.length, width, height)) {
+                // there is a wall in the south direction
+                if (!this.canGoSouth(i, cloneMazeCells)) {
                     cloneMazeCells[i].push('south');
                 }
 
-                if (!this.canGoEast(i, cloneMazeCells, cloneMazeCells.length, width)) {
+                // there is a wall in the east direction
+                if (!this.canGoEast(i, cloneMazeCells)) {
                     cloneMazeCells[i].push('east');
                 }
-            }
 
-            return cloneMazeCells;
-        },
-        getCellsPossibleDirections() {
-            let result = [];
-            const width = this.mazeWidth;
-            const height = this.mazeHeight;
-            const mazeWalls = this.mazeWalls;
-            const directions = ['north', 'south', 'east', 'west'];
-            for (let i = 0; i < mazeWalls.length; i++) {
                 // when the cell missing any wall from the 4 directions it means that direction is a path
                 // those directions that are not in the list will be added to the cell as possible directions
-                let possibleMoves = directions.filter(e => !mazeWalls[i].includes(e));
-                result.push(possibleMoves);
+                const possibleMoves = this.getPossibleMoves(cloneMazeCells[i]);
+                cellsPossibleDirections.push(possibleMoves);
             }
 
+            this.mazeWalls = cloneMazeCells;
+            this.cellsPossibleDirections = cellsPossibleDirections;
+        },
+        getPossibleMoves(array) {
+            const directions = ['north', 'south', 'east', 'west'];
+            const result = directions.filter(e => !array.includes(e));
             return result;
         },
-        updateCellPossibleDirections(index) {
-            let cellPossibleDirections = this.cellsPossibleDirections[index];
-            const cellPossibleDirectionNumber = cellPossibleDirections.length;
+        updateMazeWall(index) {
+            this.mazeWalls[index] = [];
 
-            for (let i = 0; i < cellPossibleDirectionNumber; i++) {
-                // the destination cell that can go from the current cell
-                const destinationCell = this.getDestinationCell(index, cellPossibleDirections[i]);
+            // there is a wall in the north direction
+            if (!this.canGoNorth(index, this.mazeWalls)) {
+                this.mazeWalls[index].push('north');
+            }
 
-                // if the destination cell is blocked we remove the direction toward the destination cell from the current cell
-                if (this.hasElement(this.blockCells, destinationCell)) {
-                    const arrayIndex = this.cellsPossibleDirections[index].indexOf(cellPossibleDirections[i]);
-                    if (arrayIndex !== -1) {
-                        this.cellsPossibleDirections[index].splice(arrayIndex, 1);
-                    }
+            // there is a wall in the south direction
+            if (!this.canGoSouth(index, this.mazeWalls)) {
+                this.mazeWalls[index].push('south');
+            }
+
+            // there is a wall in the east direction
+            if (!this.canGoEast(index, this.mazeWalls)) {
+                this.mazeWalls[index].push('east');
+            }
+
+            // there is a wall in the west direction
+            if (!this.canGoWest(index, this.mazeWalls)) {
+                this.mazeWalls[index].push('west');
+            }
+
+            this.cellsPossibleDirections[index] = this.getPossibleMoves(this.mazeWalls[index]);
+        },
+        saveThePony() {
+            // looping through all maze cells to apply dead end filling
+            for (let i = 0; i < this.mazeCells.length; i++) {
+                this.deadEndFilling(i);
+            }
+
+            // finding the escape path for the Pony
+            this.findEscapePath(this.ponyCell);
+        },
+        findEscapePath(index) {
+            // adding the cell to the blocked list
+            this.passedPath.push(index);
+
+            const cellsPossibleDirections = this.cellsPossibleDirections[index];
+
+            // looping through all possible directions (first cell is 1 possible direction and the rest are 2 possible directions)
+            for (let i = 0; i < cellsPossibleDirections.length; i++) {
+                const nextDestinationCell = this.getDestinationCell(index, cellsPossibleDirections[i]);
+
+                // the path that is not passed yet
+                if (!this.hasElement(this.passedPath, nextDestinationCell)) {
+                    const ponyPath = {
+                        index: index,
+                        direction: cellsPossibleDirections[i]
+                    };
+                    this.escapePath.push(ponyPath);
+
+                    // invoking the same function (recursively) for the next cell
+                    this.findEscapePath(nextDestinationCell);
                 }
             }
         },
-        getDeadEndCells() {
-            let result = [];
-            const mazeWalls = this.mazeWalls;
-            for (let i = 0; i < mazeWalls.length; i++) {
-                // deadend cells are the cells with 3 walls.
-                // if the Pony cell or End point cell are located in a deadend cell, that cell should be excluded.
-                // the rest are the dead end cells.
-                if (mazeWalls[i].length > 2 && (i !== this.ponyCell || i !== this.endCell)) {
-                    result.push(i);
-                }
+        deadEndFilling(index) {
+            // this cell is Pony cell or End-point cell
+            if (index === this.ponyCell || index === this.endCell) {
+                return;
             }
 
-            return result;
-        },
-        getDeadEndNeighborCell(index) {
-            console.log(index);
-            // make a function to test if this is a dead end
-            if (this.cellsPossibleDirections[index].length === 1) {
-                const nextDestinationCell = this.getDestinationCell(index, this.cellsPossibleDirections[index][0]);
+            const cellsPossibleDirections = this.cellsPossibleDirections[index];
 
-                //console.log(nextDestinationCell);
-                if (nextDestinationCell === -1) {
-                    console.log('destination is impossible');
-                }
-
-                return nextDestinationCell;
-            }
-        },
-        getPossibleMoves(cell) {
-            const mazeCells = this.mazeCells;
-            const mazeCellsNumber = mazeCells.length;
-            const width = this.mazeWidth;
-            const height = this.mazeWidth;
-
-            let canGoNorth = this.canGoNorth(cell, mazeCells, mazeCellsNumber);
-            console.log('can go north: ' + canGoNorth);
-
-            let canGoSouth = this.canGoSouth(cell, mazeCells, mazeCellsNumber, width, height);
-            console.log('can go south: ' + canGoSouth);
-
-            let canGoEast = this.canGoEast(cell, mazeCells, mazeCellsNumber, width);
-            console.log('can go east: ' + canGoEast);
-
-            let canGoWest = this.canGoWest(cell, mazeCells, mazeCellsNumber);
-            console.log('can go west: ' + canGoWest);
-        },
-        findThePath() {
-
-            // adding pony cell to the block cells
-            if (!this.hasElement(this.blockCells, this.ponyCell)) {
-                this.blockCells.push(this.ponyCell);
+            // there is no possible way to move (all 4 directions are walls)
+            if (cellsPossibleDirections.length === 0) {
+                return;
             }
 
-            // adding pony cell to the block cells
-            if (!this.hasElement(this.blockCells, this.endCell)) {
-                this.blockCells.push(this.endCell);
-            }
-            //this.blockCells.push(15);
-            //this.updateCellPossibleDirections(16);
-            for (let i = 0; i < this.deadEndCells.length; i++) {
-                this.getDeadEndPath(this.deadEndCells[i]);
+            // if the cell is a dead end (there is only one possible direction to move)
+            if (cellsPossibleDirections.length === 1) {
+                const nextDestinationCell = this.getDestinationCell(index, cellsPossibleDirections[0]);
 
-                // update neighbor
-                this.updateCellPossibleDirections(this.getDeadEndNeighborCell(this.deadEndCells[i]));
-            }
+                // adding the wall (the possible direction) to the cell, because we don't need this cell anymore (blocked)
+                this.mazeWalls[index].push(cellsPossibleDirections[0]);
 
-            // for (let i = 0; i < this.mazeCells.length; i++) {
-            //     this.getDeadEndPath(i);
-            // }
-        },
-        getDeadEndPath(index) {
-            console.log('-------------------');
-            console.log('get dead end ' + index);
-            // if there is one way to continue
+                // updating the possible directions of this cell (which is no direction)
+                this.cellsPossibleDirections[index] = [];
 
-            //console.log('where cell ' + index + ' can go: ' + this.cellsPossibleDirections[index]);
-            if (this.cellsPossibleDirections[index].length === 1) {
-                const nextDestinationCell = this.getDestinationCell(index, this.cellsPossibleDirections[index][0]);
+                // updating the walls and the possible directions of the next destination cell
+                this.updateMazeWall(nextDestinationCell);
 
-                //console.log(nextDestinationCell);
-                if (nextDestinationCell === -1) {
-                    console.log('destination is impossible');
-                }
-
-                if (!this.hasElement(this.blockCells, nextDestinationCell)) {
-                    console.log('destination cell is not blocked, will be blocked and call the function again: ', nextDestinationCell);
-                    this.blockCells.push(nextDestinationCell);
-                    this.updateCellPossibleDirections(nextDestinationCell);
-                    this.getDeadEndPath(nextDestinationCell);
-                } else {
-                    console.log('destination cell is blocked, continue with other cells' , nextDestinationCell);
-                }
-            // it is a junstion maybe put in junction array
-            } else {
-                console.log('this is a junction, stop here');
+                // invoking the same function (recursively) for the next cell
+                this.deadEndFilling(nextDestinationCell);
             }
         },
-
         isValidCellIndex(cell, mazeCellsNumber) {
             return mazeCellsNumber - 1 < cell || cell < 0 ? false : true;
         },
         hasElement(array, element) {
             return array.indexOf(element) === -1 ? false : true;
-        },
-        removeArrayElement(array, value) {
-            return array.filter((element) => {element !== value});
         },
         getDestinationCell(currentCell, direction) {
             let result = -1;
@@ -286,10 +249,25 @@ export default {
 
             return result;
         },
-        canGoNorth(cell, mazeCells, mazeCellsNumber) {
-            return this.canGoNorthOrWest(cell, mazeCells, mazeCellsNumber, true);
+        canGoNorth(cell, mazeCells) {
+            const mazeCellsNumber = this.mazeCells.length;
+            const width = this.mazeWidth;
+
+            if (!this.isValidCellIndex(cell, mazeCellsNumber)) {
+                return false;
+            }
+
+            if (this.isFirstRow(cell, width)) {
+                return false;
+            }
+
+            return this.hasPreRowSouthWall(cell, mazeCells, width) ? false : true;
         },
-        canGoSouth(cell, mazeCells, mazeCellsNumber, width, height) {
+        canGoSouth(cell, mazeCells) {
+            const mazeCellsNumber = this.mazeCells.length;
+            const width = this.mazeWidth;
+            const height = this.mazeHeight;
+
             if (!this.isValidCellIndex(cell, mazeCellsNumber)) {
                 return false;
             }
@@ -301,7 +279,10 @@ export default {
             // if the next row same column cell has north wall
             return this.hasNextRowNorthWall(cell, mazeCells, width) ? false : true;
         },
-        canGoEast(cell, mazeCells, mazeCellsNumber, width) {
+        canGoEast(cell, mazeCells) {
+            const mazeCellsNumber = this.mazeCells.length;
+            const width = this.mazeWidth;
+
             if (!this.isValidCellIndex(cell, mazeCellsNumber)) {
                 return false;
             }
@@ -315,25 +296,40 @@ export default {
             // if the next cell has west wall
             return this.hasElement(mazeCells[nextCellIndex], 'west') ? false : true;
         },
-        canGoWest(cell, mazeCells, mazeCellsNumber) {
-            return this.canGoNorthOrWest(cell, mazeCells, mazeCellsNumber);
-        },
-        canGoNorthOrWest(cell, mazeCells, mazeCellsNumber, isNorth) {
-            const direction = isNorth ? 'north' : 'west';
+        canGoWest(cell, mazeCells) {
+            const mazeCellsNumber = this.mazeCells.length;
+            const width = this.mazeWidth;
 
             if (!this.isValidCellIndex(cell, mazeCellsNumber)) {
                 return false;
             }
 
-            return !this.hasElement(mazeCells[cell], direction);
+            if (this.isFirstColumn(cell, width)) {
+                return false;
+            }
+
+            const previousCellIndex = cell - 1;
+
+            // if the previous cell has east wall
+            return this.hasElement(mazeCells[previousCellIndex], 'east') ? false : true;
+        },
+        hasPreRowSouthWall(cell, mazeCells, width) {
+            const preRowSouthWallIndex = cell - width;
+            return this.hasElement(mazeCells[preRowSouthWallIndex], 'south');
         },
         hasNextRowNorthWall(cell, mazeCells, width) {
             const nextRowNorthWallIndex = cell + width;
             return this.hasElement(mazeCells[nextRowNorthWallIndex], 'north');
         },
+        isFirstRow(cell, width) {
+            return cell < width;
+        },
         isLastRow(cell, cellNumbers, width, height) {
             const lastRowFirstCellIndex = (width * (height - 1)) -1;
             return cell > lastRowFirstCellIndex && cell < cellNumbers ? true : false;
+        },
+        isFirstColumn(cell, width) {
+            return cell % width === 0;
         },
         isLastColumn(cell, width, cellNumbers) {
             return width - 1 === cell % width && cell < cellNumbers;
@@ -344,10 +340,10 @@ export default {
             const h = Math.floor(value / this.mazeWidth) + 1;
             const v = value % this.mazeWidth + 1;
             console.log('cell: ' + value + ' => row: ' + h + ' ,column: ' + v);
+            //console.log(this.canGoWest(value, this.mazeWalls));
 
-            //let possibleMoves = this.getPossibleMoves(value);
             //console.log(this.getDestinationCell(value, 'west'));
-            this.findThePath();
+            this.saveThePony();
         }
     }
 }
