@@ -1,7 +1,8 @@
 <template>
     <div id="app">
         <MazeInit v-on:get-mazeData="saveMazeData" />
-        <MazeDisplay v-bind:mazeID="mazeID" />
+        <MazeDisplay v-bind:mazeID="mazeID"
+                     v-bind:gameplayType="gameplayType" />
     </div>
 </template>
 
@@ -18,13 +19,15 @@ export default {
     data() {
         return {
             mazeID: '',
-            ponyName: ''
+            ponyName: '',
+            gameplayType: ''
         }
     },
     methods: {
-        saveMazeData(mazeID, ponyName) {
+        saveMazeData(mazeID, ponyName, gameplayType) {
             this.mazeID = mazeID,
-            this.ponyName = ponyName
+            this.ponyName = ponyName,
+            this.gameplayType = gameplayType;
         }
     }
 }

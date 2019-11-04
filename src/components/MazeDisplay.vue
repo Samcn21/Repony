@@ -1,11 +1,20 @@
 <template>
-    <div class="maze-container" v-bind:class="{ 'maze-container--hidden': isHidden }">
+    <div class="maze-container" v-bind:class="{ 'container--hidden': isHidden }">
         <div>
             <form @submit="refreshMaze" class="">
                 <input type="submit" value="Refresh" class="" />
             </form>
         </div>
-        <div>
+        <ManualPanel class="manual-panel"
+                        v-bind:class="{'container--hidden': hideManualPanel}"
+                        v-on:get-ponyMove="movePony"
+                        v-bind:ponyDirections="ponyDirections"
+                      />
+
+        <div v-bind:class="{'container--hidden': hideAutoPanel }">
+            automatic gameplay
+        </div>
+        <div class="container--hidden">
             <form @submit="testMethod" class="">
                 <label>
                     test:
@@ -20,17 +29,21 @@
 </template>
 
 <script>
+import ManualPanel from '../components/ManualPanel.vue'
 import axios from 'axios';
+import fetch from 'node-fetch';
 
 export default {
     name: 'MazeDisplay',
-    props: ['mazeID'],
+    props: ['mazeID', 'gameplayType'],
     components: {
-
+        ManualPanel
     },
     data() {
         return {
-            isHidden: false,
+            isHidden: true,
+            hideManualPanel: true,
+            hideAutoPanel: true,
             mazeCells: [],
             mazeWalls: [],
             cellsPossibleDirections: [],
@@ -42,7 +55,14 @@ export default {
             mazeWidth: 0,
             mazeHeight: 0,
             mazePrint: '',
-            testValue: 0
+            testValue: 0,
+            ponyDirections: {
+                north: false,
+                south: false,
+                east: false,
+                west: false
+            },
+            isOver: false
         }
     },
     watch: {
@@ -52,12 +72,22 @@ export default {
                 const mazeData = await this.sendGetRequest(value);
                 this.extractData(mazeData);
                 this.mazePrint = await this.sendGetRequest(value, true);
+
+                if (this.gameplayType === 'auto') {
+                    this.hideAutoPanel = false;
+                    this.saveThePony();
+                } else {
+                    this.hideManualPanel = false;
+                    this.updatePonyDirections();
+                }
             }
         }
     },
     methods: {
         async refreshMaze(e) {
-            e.preventDefault();
+            if (e) {
+                e.preventDefault();
+            }
             const mazeId = this.mazeID;
             const mazeData = await this.sendGetRequest(mazeId);
             this.extractData(mazeData, true);
@@ -72,6 +102,50 @@ export default {
                 return response.data;
             } catch (error) {
                 console.error(error);
+            }
+        },
+        async sendPOSTRequest(mazeId, direction) {
+            const url = `https://ponychallenge.trustpilot.com/pony-challenge/maze/${mazeId}`;
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        "direction": direction
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                });
+                return await response.json();
+            } catch (error) {
+                console.log('an error occured fetching maze id: ' + error);
+                return '';
+            }
+        },
+        async movePony(direction) {
+            // comes from manual panel
+            if (direction) {
+                const gameStateData = await this.sendPOSTRequest(this.mazeID, direction);
+                this.getGameResult(gameStateData);
+            }
+
+            await this.refreshMaze();
+
+            if (!this.isOver) {
+                await this.updatePonyDirections();
+            }
+        },
+        getGameResult(data) {
+            if (data.state === 'won') {
+                console.log('you saved the pony: ' + data['hidden-url']);
+                this.updatePonyDirections(true);
+                this.isOver = true;
+            }
+
+            if (data.state === 'over') {
+                console.log('pony is dead: ' + data['hidden-url']);
+                this.updatePonyDirections(true);
+                this.isOver = true;
             }
         },
         extractData(mazeData, isRefresh) {
@@ -121,10 +195,19 @@ export default {
             this.mazeWalls = cloneMazeCells;
             this.cellsPossibleDirections = cellsPossibleDirections;
         },
-        getPossibleMoves(array) {
+        getPossibleMoves(mazeCell) {
             const directions = ['north', 'south', 'east', 'west'];
-            const result = directions.filter(e => !array.includes(e));
+            const result = directions.filter(e => !mazeCell.includes(e));
             return result;
+        },
+        updatePonyDirections(isOver) {
+            const ponyLocation = this.ponyCell;
+            const mazeWalls = this.mazeWalls;
+
+            this.ponyDirections.north = isOver ? false : this.canGoNorth(ponyLocation, mazeWalls);
+            this.ponyDirections.south = isOver ? false : this.canGoSouth(ponyLocation, mazeWalls);
+            this.ponyDirections.east = isOver ? false : this.canGoEast(ponyLocation, mazeWalls);
+            this.ponyDirections.west = isOver ? false : this.canGoWest(ponyLocation, mazeWalls);
         },
         updateMazeWall(index) {
             this.mazeWalls[index] = [];
@@ -174,7 +257,8 @@ export default {
                 if (!this.hasElement(this.passedPath, nextDestinationCell)) {
                     const ponyPath = {
                         index: index,
-                        direction: cellsPossibleDirections[i]
+                        direction: cellsPossibleDirections[i],
+                        request: false
                     };
                     this.escapePath.push(ponyPath);
 
@@ -230,11 +314,11 @@ export default {
             // find the destination from the direction of the movement
             switch(direction) {
                 case 'north':
-                    // symmetric cell of the upper row
+                    // symmetric cell of the previous row
                     result = currentCell - this.mazeWidth;
                     break;
                 case 'south':
-                    // symmetric cell of the lower row
+                    // symmetric cell of the next row
                     result = currentCell + this.mazeWidth;
                     break;
                 case 'east':
@@ -354,7 +438,7 @@ export default {
         margin-top: 3rem;
     }
 
-    .maze-container--hidden {
+    .container--hidden {
         display: none;
     }
 </style>

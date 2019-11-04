@@ -7,25 +7,42 @@
                         <label>
                             Maze width:
                         </label>
-                        <input type="text" placeholder="15" v-model="mazeWidth" class="" />
+                        <select v-model="mazeWidth">
+                            <option v-for="width in widthHeight" :value="width" :key="width" :selected="width === mazeWidth">{{ width }}</option>
+                        </select>
                     </div>
                     <div>
                         <label>
                             Maze Height:
                         </label>
-                        <input type="text" placeholder="25" v-model="mazeHeight" class="" />
-                    </div>
-                    <div>
-                        <label>
-                            Pony Name:
-                        </label>
-                        <input type="text" placeholder="applejack" v-model="ponyName" class="" />
+                        <select v-model="mazeHeight">
+                            <option v-for="height in widthHeight" :value="height" :key="height" :selected="height === mazeHeight">{{ height }}</option>
+                        </select>
                     </div>
                     <div>
                         <label>
                             Maze Difficulty:
                         </label>
-                        <input type="text" placeholder="0" v-model="mazeDifficulty" class="" />
+                        <select v-model="mazeDifficulty">
+                            <option v-for="difficulty in difficultyOptions" :value="difficulty" :key="difficulty" :selected="difficulty === 0 ? 'selected' : ''">{{ difficulty }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>
+                            Pony Name:
+                        </label>
+                        <select v-model="ponyName">
+                            <option v-for="name in ponyNames" :value="name" :key="name" :selected="name === ponyName">{{ name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>
+                            Gameplay Type:
+                        </label>
+                        <select v-model="gameplayType">
+                            <option value="manual">I will save {{ ponyName }} myself</option>
+                            <option value="auto">I will let the app saves {{ ponyName }}</option>
+                        </select>
                     </div>
 
                     <input type="submit" value="Create A Maze!" class="" />
@@ -46,26 +63,53 @@
 </template>
 
 <script>
-//import axios from 'axios';
 import fetch from 'node-fetch';
 
 export default {
     name: 'MazeInit',
-    async created() {
-        //await this.createMaze();
-    },
     data() {
         return {
+            widthHeight: [],
+            difficultyOptions: [],
+            ponyNames: [
+                'Twilight Sparkle',
+                'Pinkie Pie',
+                'Rarity',
+                'Rainbow Dash',
+                'Fluttershy',
+                'Applejack',
+                'Princess Celestia',
+                'Apple Bloom',
+                'Sweetie Belle',
+                'Princess Luna',
+                'Spike',
+                'Derpy Hooves',
+                'Cheerilee',
+            ],
+            gameplayType: 'manual',
+            minWH: 15,
+            maxWH: 25,
             mazeWidth: 15,
             mazeHeight: 25,
-            ponyName: 'applejack',
+            ponyName: 'Applejack',
             mazeDifficulty: 0,
             mazeID: '',
             isMazeCreated: false,
             mazeIDtest: {
-                maze_id: '3128cc30-a257-459f-bacc-70df2edeed57'
+                maze_id: '' //'3128cc30-a257-459f-bacc-70df2edeed57'
             }
         }
+    },
+    mounted() {
+        for (let i = this.minWH; i <= this.maxWH; i++) {
+            this.widthHeight.push(i);
+        }
+
+        for (let i = 0; i <= 10; i++) {
+            this.difficultyOptions.push(i);
+        }
+
+        this.ponyNames.sort();
     },
     methods: {
         async createMaze(e) {
@@ -100,7 +144,7 @@ export default {
         getMazeId(value) {
             this.mazeID = value.maze_id;
             this.isMazeCreated = true;
-            this.$emit('get-mazeData', this.mazeID, this.ponyName);
+            this.$emit('get-mazeData', this.mazeID, this.ponyName, this.gameplayType);
         }
     }
 }
