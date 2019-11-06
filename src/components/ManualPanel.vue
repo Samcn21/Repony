@@ -1,20 +1,38 @@
 <template>
     <div class="main-container">
         <div class="first-col">
-            <div>
-                <input v-on:click="movePony('west')" type="submit" value="west" :disabled="disableButton('west')" />
-            </div>
+            <input v-on:click="movePony('west')"
+                   v-bind:class="{ 'disabled': disableButton('west') }"
+                   :disabled="disableButton('west')"
+                   type="submit"
+                   value="west"
+                   class="direction-button" />
         </div>
         <div class="second-col">
             <div>
-                <input v-on:click="movePony('north')" type="submit" value="north" v-bind:class="{ 'disabled': disableButton('north') }" :disabled="disableButton('north')" />
+                <input v-on:click="movePony('north')"
+                       v-bind:class="{ 'disabled': disableButton('north') }"
+                       :disabled="disableButton('north')"
+                       type="submit"
+                       value="north"
+                       class="direction-button" />
             </div>
             <div>
-                <input v-on:click="movePony('south')" type="submit" value="south" :disabled="disableButton('south')" />
+                <input v-on:click="movePony('south')"
+                       v-bind:class="{ 'disabled': disableButton('south') }"
+                       :disabled="disableButton('south')"
+                       type="submit"
+                       value="south"
+                       class="direction-button" />
             </div>
         </div>
         <div class="third-col">
-            <input v-on:click="movePony('east')" type="submit" value="east" :disabled="disableButton('east')" />
+            <input v-on:click="movePony('east')"
+                   v-bind:class="{ 'disabled': disableButton('east') }"
+                   :disabled="disableButton('east')"
+                   type="submit"
+                   value="east"
+                   class="direction-button" />
         </div>
     </div>
 </template>
@@ -42,7 +60,14 @@ export default {
         justify-content: space-around;
     }
 
+    .direction-button {
+        cursor: pointer;
+        width: 100px;
+        height: 40px;
+    }
+
     .disabled {
-        border: 2px dashed red;
+        cursor: auto;
+        //border: 2px dashed red;
     }
 </style>

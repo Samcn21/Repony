@@ -44,7 +44,7 @@ export default {
         font-family: Arial, Helvetica sans-serif;
         line-height: 1.4;
         font-size: 14px;
-        width: 1280px;
+        width: 760px;
         margin: 0 auto;
     }
 

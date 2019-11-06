@@ -1,19 +1,22 @@
 <template>
     <div class="maze-container" v-bind:class="{ 'container--hidden': isHidden }">
-        <div>
+        <!-- <div>
             <form @submit="refreshMaze" class="">
                 <input type="submit" value="Refresh" class="" />
             </form>
-        </div>
+        </div> -->
         <ManualPanel class="manual-panel"
                         v-bind:class="{'container--hidden': hideManualPanel}"
                         v-on:get-ponyMove="movePony"
                         v-bind:ponyDirections="ponyDirections"
-                      />
+                        />
 
-        <div v-bind:class="{'container--hidden': hideAutoPanel }">
-            automatic gameplay
-        </div>
+        <AutoPanel class="auto-panel"
+                        v-bind:class="{'container--hidden': hideAutoPanel}"
+                        v-bind:escapePath="escapePath"
+                        v-on:get-ponyMove="movePony"
+                        />
+
         <div class="container--hidden">
             <form @submit="testMethod" class="">
                 <label>
@@ -30,6 +33,7 @@
 
 <script>
 import ManualPanel from '../components/ManualPanel.vue'
+import AutoPanel from '../components/AutoPanel.vue'
 import axios from 'axios';
 import fetch from 'node-fetch';
 
@@ -37,7 +41,8 @@ export default {
     name: 'MazeDisplay',
     props: ['mazeID', 'gameplayType'],
     components: {
-        ManualPanel
+        ManualPanel,
+        AutoPanel
     },
     data() {
         return {
@@ -123,30 +128,29 @@ export default {
             }
         },
         async movePony(direction) {
-            // comes from manual panel
-            if (direction) {
-                const gameStateData = await this.sendPOSTRequest(this.mazeID, direction);
-                this.getGameResult(gameStateData);
-            }
+            const gameStateData = await this.sendPOSTRequest(this.mazeID, direction);
+            const gameResult = this.getGameResult(gameStateData);
 
-            await this.refreshMaze();
-
-            if (!this.isOver) {
+            if (gameResult === 'active') {
+                await this.refreshMaze();
                 await this.updatePonyDirections();
+            } else {
+                this.updatePonyDirections(true);
+                this.isOver = true;
             }
         },
         getGameResult(data) {
             if (data.state === 'won') {
                 console.log('you saved the pony: ' + data['hidden-url']);
-                this.updatePonyDirections(true);
-                this.isOver = true;
+                return 'win';
             }
 
             if (data.state === 'over') {
                 console.log('pony is dead: ' + data['hidden-url']);
-                this.updatePonyDirections(true);
-                this.isOver = true;
+                return 'lost';
             }
+
+            return 'active';
         },
         extractData(mazeData, isRefresh) {
             //getting Domokun, Pony and End-point cell index
