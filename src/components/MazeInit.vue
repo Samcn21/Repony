@@ -1,53 +1,86 @@
 <template>
-    <div>
-        <form @submit="createMaze" class="">
-            <div class="">
-                <div v-bind:class="{ 'maze-creation__form--hidden': isMazeCreated }" >
-                    <div>
-                        <label>
-                            Maze width:
-                        </label>
-                        <select v-model="mazeWidth">
-                            <option v-for="width in widthHeight" :value="width" :key="width" :selected="width === mazeWidth">{{ width }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>
-                            Maze Height:
-                        </label>
-                        <select v-model="mazeHeight">
-                            <option v-for="height in widthHeight" :value="height" :key="height" :selected="height === mazeHeight">{{ height }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>
-                            Maze Difficulty:
-                        </label>
-                        <select v-model="mazeDifficulty">
-                            <option v-for="difficulty in difficultyOptions" :value="difficulty" :key="difficulty" :selected="difficulty === 0 ? 'selected' : ''">{{ difficulty }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>
-                            Pony Name:
-                        </label>
-                        <select v-model="ponyName">
-                            <option v-for="name in ponyNames" :value="name" :key="name" :selected="name === ponyName">{{ name }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>
-                            Gameplay Type:
-                        </label>
-                        <select v-model="gameplayType">
-                            <option value="manual">I will save {{ ponyName }} myself</option>
-                            <option value="auto">I will let the app saves {{ ponyName }}</option>
-                        </select>
-                    </div>
-
-                    <input type="submit" value="Create A Maze!" class="" />
+    <div class="maze-init__container" v-bind:class="{ 'maze-creation__form--hidden': isMazeCreated }">
+        <form @submit="createMaze" class="maze-init__form">
+            <div class="maze-init__form-item">
+                <div class="maze-init__label">
+                    <label>
+                        Maze width:
+                    </label>
                 </div>
+                <div class="maze-init__select-container">
+                    <select v-model="mazeWidth" class="select-field">
+                        <option v-for="width in widthHeight" :value="width" :key="width" :selected="width === mazeWidth">{{ width + ' cells' }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="maze-init__form-item">
+                <div class="maze-init__label">
+                    <label>
+                        Maze Height:
+                    </label>
+                </div>
+                <div class="maze-init__select-container">
+                    <select v-model="mazeHeight" class="select-field">
+                        <option v-for="height in widthHeight" :value="height" :key="height" :selected="height === mazeHeight">{{ height + ' cells' }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="maze-init__form-item">
+                <div class="maze-init__label">
+                    <label>
+                        Maze Difficulty:
+                    </label>
+                </div>
+                <div class="maze-init__select-container">
+                    <select v-model="mazeDifficulty" class="select-field">
+                        <option v-for="difficulty in difficultyOptions" :value="difficulty" :key="difficulty" :selected="difficulty === 0 ? 'selected' : ''">{{ difficulty }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="maze-init__form-item">
+                <div class="maze-init__label">
+                    <label>
+                        Maze Visualization Type:
+                    </label>
+                </div>
+                <div class="maze-init__select-container">
+                    <select v-model="visualizationType" class="select-field">
+                        <option value="non-graphical">Non graphical maze (printed maze from the API)</option>
+                        <option value="graphical">Graphical maze</option>
+                    </select>
+                </div>
+            </div>
+            <div class="maze-init__form-item">
+                <div class="maze-init__label">
+                    <label>
+                        Pony Name:
+                    </label>
+                </div>
+                <div class="maze-init__select-container">
+                    <select v-model="ponyName" class="select-field">
+                        <option v-for="name in ponyNames" :value="name" :key="name" :selected="name === ponyName">{{ name }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="maze-init__form-item">
+                <div class="maze-init__label">
+                    <label>
+                        Gameplay Type:
+                    </label>
+                </div>
+                <div class="maze-init__select-container">
+                    <select v-model="gameplayType" class="select-field">
+                        <option value="manual">I will save {{ ponyName }} myself!</option>
+                        <option value="auto">I will let the app saves {{ ponyName }}</option>
+                    </select>
+                </div>
+            </div>
 
+            <div class="maze-init__form-item maze-init__form-button">
+                <input type="submit" value="Create A Maze!" class="" />
+            </div>
+
+        </form>
                 <div v-bind:class="{ 'maze-creation__form--hidden': !isMazeCreated }">
                     <div>
                         <label>
@@ -56,9 +89,6 @@
                         {{mazeID}}
                     </div>
                 </div>
-            </div>
-        </form>
-
     </div>
 </template>
 
@@ -87,10 +117,11 @@ export default {
                 'Cheerilee',
             ],
             gameplayType: 'auto',
+            visualizationType: 'graphical',
             minWH: 15,
             maxWH: 25,
             mazeWidth: 15,
-            mazeHeight: 15,
+            mazeHeight: 25,
             ponyName: 'Applejack',
             mazeDifficulty: 0,
             mazeID: '',
@@ -155,4 +186,67 @@ export default {
     .maze-creation__form--hidden {
         display: none;
     }
+
+    .maze-init__container {
+        //border: 1px red solid;
+        background-color: #f4f7f8;
+    }
+
+    .maze-init__form {
+        border: 1px black solid;
+    }
+
+    .select-field {
+        box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        border: 1px solid #C2C2C2;
+        box-shadow: 1px 1px 4px #EBEBEB;
+        -moz-box-shadow: 1px 1px 4px #EBEBEB;
+        -webkit-box-shadow: 1px 1px 4px #EBEBEB;
+        border-radius: 3px;
+        -webkit-border-radius: 3px;
+        -moz-border-radius: 3px;
+        padding: 7px;
+        outline: none;
+        height: 3rem;
+        background-color: #d2e6e2;
+    }
+
+    .select-field {
+        width: 100%;
+    }
+
+    .select-field:focus {
+        border: 1px solid #30ff00;
+    }
+
+    .maze-init__form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .maze-init__form-item {
+        width: 60%;
+        display: flex;
+        padding: 1%;
+    }
+
+    .maze-init__form-button {
+        width: 100%;
+        justify-content: space-around;
+    }
+
+    .maze-init__select-container {
+        width: 70%;
+    }
+
+    .maze-init__label {
+        width: 30%;
+        text-align: left;
+        padding-top: 0.5rem;
+    }
+
+
 </style>

@@ -62,12 +62,10 @@ export default {
 
     .direction-button {
         cursor: pointer;
-        width: 100px;
-        height: 40px;
     }
 
     .disabled {
-        cursor: auto;
+        //cursor: auto;
         //border: 2px dashed red;
     }
 </style>

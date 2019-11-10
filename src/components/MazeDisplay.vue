@@ -16,7 +16,9 @@
                         v-bind:escapePath="escapePath"
                         v-on:get-ponyMove="movePony"
                         />
-
+        <div>
+            {{endGameResult}}
+        </div>
         <div class="container--hidden">
             <form @submit="testMethod" class="">
                 <label>
@@ -39,7 +41,7 @@ import fetch from 'node-fetch';
 
 export default {
     name: 'MazeDisplay',
-    props: ['mazeID', 'gameplayType'],
+    props: ['mazeID', 'gameplayType', 'ponyName'],
     components: {
         ManualPanel,
         AutoPanel
@@ -67,7 +69,8 @@ export default {
                 east: false,
                 west: false
             },
-            isOver: false
+            isOver: false,
+            endGameResult: ''
         }
     },
     watch: {
@@ -141,12 +144,14 @@ export default {
         },
         getGameResult(data) {
             if (data.state === 'won') {
-                console.log('you saved the pony: ' + data['hidden-url']);
-                return 'win';
+                this.endGameResult = `Congratulations!!! You saved ${this.ponyName}! The hidden url is (I don't know what that means anyways!): ${data['hidden-url']}`;
+                return 'won';
             }
 
             if (data.state === 'over') {
-                console.log('pony is dead: ' + data['hidden-url']);
+                const autoResult = `Unfortunately ${this.ponyName} is dead! The hidden url is (I don't know what that means anyways!): ${data['hidden-url']}`;
+                const manualResult = `Congratulations!!! You killed ${this.ponyName}! The hidden url is (I don't know what that means anyways!): ${data['hidden-url']}`;
+                this.endGameResult = this.gameplayType === 'auto' ? autoResult : manualResult;
                 return 'lost';
             }
 
